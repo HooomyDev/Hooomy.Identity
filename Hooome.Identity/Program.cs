@@ -1,6 +1,8 @@
 using Hooome.Identity;
 using Hooome.Identity.Data;
 using Hooome.Identity.Models;
+using Hooome.Identity.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -29,17 +31,23 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
-builder.Services.ConfigureApplicationCookie(config => {
-    config.Cookie.Name = "Hooome.Identity.Cookie";
-    config.Cookie.HttpOnly = true;
-    config.Cookie.SecurePolicy = CookieSecurePolicy.Always; 
-    config.Cookie.SameSite = SameSiteMode.None; 
-    config.LoginPath = "/auth/login";
-    config.LogoutPath = "/auth/logout";
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.Authority = "https://localhost:5001"; 
+    options.Audience = "HooomeWebApi";            
+    options.RequireHttpsMetadata = false;
 });
+
 
 builder.Services.AddIdentityServer()
     .AddAspNetIdentity<AppUser>()
+    .AddProfileService<ProfileService>()
     .AddInMemoryClients(Config.Clients)
     .AddInMemoryApiScopes(Config.ApiScopes)
     .AddInMemoryIdentityResources(Config.IdentityResources)

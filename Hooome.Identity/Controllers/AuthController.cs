@@ -12,47 +12,6 @@ public class AuthController(
     UserManager<AppUser> userManager,
     IIdentityServerInteractionService interactionService) : ControllerBase
 {
-    [HttpPost("login")]
-    public async Task<IActionResult> Login([FromBody] LoginViewModel viewModel)
-    {
-        if (!ModelState.IsValid)
-            return BadRequest(new { message = "Invalid data" });
-
-        var user = await userManager.FindByEmailAsync(viewModel.Email);
-        if (user == null)
-            return Unauthorized(new { message = "User not found" });
-
-        var result = await signInManager.PasswordSignInAsync(
-            user.UserName,
-            viewModel.Password,
-            isPersistent: false,
-            lockoutOnFailure: false);
-
-        if (result.Succeeded)
-        {
-            var roles = await userManager.GetRolesAsync(user);
-
-            return Ok(new
-            {
-                message = "Login successful",
-                user = new
-                {
-                    id = user.Id,
-                    email = user.Email,
-                    userName = user.UserName,
-                    firstName = user.FirstName,
-                    surname = user.Surname,
-                    patronymic = user.Patronymic,
-                    phoneNumber = user.PhoneNumber,
-                    roles
-                }
-            });
-        }
-
-        return Unauthorized(new { message = "Login error" });
-    }
-
-
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterViewModel viewModel)
     {
@@ -97,5 +56,67 @@ public class AuthController(
         }
 
         return Ok(new { message = "Logout successful" });
+    }
+
+    [HttpPut("profile")]
+    public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileViewModel model)
+    {
+        var user = await userManager.FindByIdAsync(model.Id.ToString());
+        if (user == null) return NotFound("User not found");
+
+        user.FirstName = model.FirstName;
+        user.Surname = model.Surname;
+        user.Patronymic = model.Patronymic;
+        user.PhoneNumber = model.PhoneNumber;
+
+        if (!string.IsNullOrEmpty(model.Email) && model.Email != user.Email)
+        {
+            var setEmailResult = await userManager.SetEmailAsync(user, model.Email);
+            if (!setEmailResult.Succeeded)
+                return BadRequest(setEmailResult.Errors);
+
+            var setUserNameResult = await userManager.SetUserNameAsync(user, model.Email);
+            if (!setUserNameResult.Succeeded)
+                return BadRequest(setUserNameResult.Errors);
+        }
+
+        var result = await userManager.UpdateAsync(user);
+        if (result.Succeeded)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+
+            return Ok(new
+            {
+                message = "Profile updated",
+                user = new
+                {
+                    id = user.Id,
+                    email = user.Email,
+                    firstName = user.FirstName,
+                    surname = user.Surname,
+                    patronymic = user.Patronymic,
+                    phoneNumber = user.PhoneNumber,
+                    role = roles[0]
+                }
+            });
+        }
+
+        return BadRequest(result.Errors);
+    }
+
+    [HttpPost("change-password")]
+    public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordViewModel model)
+    {
+        var user = await userManager.FindByEmailAsync(model.Email);
+        if (user == null) return NotFound("User not found");
+
+        var result = await userManager.ChangePasswordAsync(user, model.OldPassword, model.NewPassword);
+
+        if (result.Succeeded)
+        {
+            return Ok(new { message = "Password changed successfully" });
+        }
+
+        return BadRequest(new { message = "Error changing password", errors = result.Errors });
     }
 }
