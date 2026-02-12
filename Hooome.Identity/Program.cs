@@ -1,4 +1,4 @@
-using Hooome.Identity;
+using Duende.IdentityServer.EntityFramework.DbContexts;
 using Hooome.Identity.Data;
 using Hooome.Identity.Models;
 using Hooome.Identity.Services;
@@ -12,13 +12,30 @@ builder.Services.AddControllers();
 
 var configuration = builder.Configuration;
 
-var connectionString = configuration["DbConnection"];
+var connectionString = configuration["DbConnections:auth"];
 var serverVersion = new MySqlServerVersion(new Version(configuration["DatabaseSettings:ServerVersion"]
     ?? throw new NullReferenceException("Server version is null")));
+var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
 
 builder.Services.AddDbContext<AuthDbContext>(options =>
 {
-    options.UseMySql(connectionString, serverVersion);
+    options.UseMySql(connectionString, serverVersion, 
+        sql => sql.MigrationsAssembly(migrationsAssembly));
+});
+
+
+var configConnectionString = configuration["DbConnections:auth"];
+
+builder.Services.AddDbContext<ConfigurationDbContext>(options =>
+{
+    options.UseMySql(configConnectionString, serverVersion,
+        sql => sql.MigrationsAssembly(migrationsAssembly));
+});
+
+builder.Services.AddDbContext<PersistedGrantDbContext>(options =>
+{
+    options.UseMySql(configConnectionString, serverVersion,
+        sql => sql.MigrationsAssembly(migrationsAssembly));
 });
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
@@ -48,10 +65,22 @@ builder.Services.AddAuthentication(options =>
 builder.Services.AddIdentityServer()
     .AddAspNetIdentity<AppUser>()
     .AddProfileService<ProfileService>()
-    .AddInMemoryClients(Config.Clients)
-    .AddInMemoryApiScopes(Config.ApiScopes)
-    .AddInMemoryIdentityResources(Config.IdentityResources)
-    .AddInMemoryApiResources(Config.ApiResources)
+    .AddConfigurationStore(options =>
+    {
+        options.ConfigureDbContext = b =>
+            b.UseMySql(configConnectionString, serverVersion,
+                sql => sql.MigrationsAssembly(migrationsAssembly));
+    })
+    .AddOperationalStore(options =>
+    {
+        options.ConfigureDbContext = b => 
+            b.UseMySql(configConnectionString, serverVersion, 
+                sql => sql.MigrationsAssembly(migrationsAssembly));
+
+        options.EnableTokenCleanup = true;
+        options.TokenCleanupInterval = 3600;
+        options.RemoveConsumedTokens = true;
+    })
     .AddDeveloperSigningCredential();
 
 
@@ -72,6 +101,8 @@ var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
 await DbContextInitializer.Initialize(context, roleManager);
 
+await IdentityDbInitializer.Initialize(scope.ServiceProvider);
+
 app.UseRouting();
 app.UseCors("AllowReactApp");
 app.UseAuthentication();
@@ -80,3 +111,4 @@ app.UseIdentityServer();
 app.MapControllers();
 
 app.Run();
+
