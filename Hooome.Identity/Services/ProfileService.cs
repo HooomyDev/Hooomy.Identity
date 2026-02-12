@@ -12,17 +12,18 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
     public async Task GetProfileDataAsync(ProfileDataRequestContext context)
     {
         var user = await userManager.GetUserAsync(context.Subject);
-        var role = (await userManager.GetRolesAsync(user))[0];
+        var roles = await userManager.GetRolesAsync(user);
+        var role = roles.FirstOrDefault() ?? "Resident";
 
         var claims = new List<Claim>
         {
-            new(JwtClaimTypes.Email, user.Email),
-            new(JwtClaimTypes.FamilyName, user.Surname),
-            new(JwtClaimTypes.MiddleName, user.Patronymic),
-            new(JwtClaimTypes.GivenName, user.FirstName),
-            new(JwtClaimTypes.Name, user.UserName),
+            new(JwtClaimTypes.Email, user.Email ?? string.Empty),
+            new(JwtClaimTypes.FamilyName, user.Surname ?? string.Empty),
+            new(JwtClaimTypes.MiddleName, user.Patronymic ?? string.Empty),
+            new(JwtClaimTypes.GivenName, user.FirstName ?? string.Empty),
+            new(JwtClaimTypes.Name, user.UserName ?? string.Empty),
             new(JwtClaimTypes.Role, role),
-            new(JwtClaimTypes.PhoneNumber, user.PhoneNumber),
+            new(JwtClaimTypes.PhoneNumber, user.PhoneNumber ?? string.Empty),
         };
 
         context.IssuedClaims.AddRange(claims);
