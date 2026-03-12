@@ -13,7 +13,8 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
     {
         var user = await userManager.GetUserAsync(context.Subject);
         var roles = await userManager.GetRolesAsync(user);
-        var role = roles.FirstOrDefault() ?? "Resident";
+        //var role = roles.FirstOrDefault() ?? "Resident";
+        var role = "Resident";
 
         var claims = new List<Claim>
         {

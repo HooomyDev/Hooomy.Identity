@@ -3,12 +3,13 @@ using Hooome.Identity.Data;
 using Hooome.Identity.Models;
 using Hooome.Identity.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllers();
+builder.Services.AddControllers(); 
 
 var configuration = builder.Configuration;
 
@@ -48,21 +49,10 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
     .AddEntityFrameworkStores<AuthDbContext>()
     .AddDefaultTokenProviders();
 
-
-builder.Services.AddAuthentication(options =>
+builder.Services.AddIdentityServer(options =>
 {
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.IssuerUri = configuration["ISSUER_URI"] ?? "http://localhost:5005";
 })
-.AddJwtBearer(options =>
-{
-    options.Authority = "https://localhost:5001"; 
-    options.Audience = "HooomeWebApi";            
-    options.RequireHttpsMetadata = false;
-});
-
-
-builder.Services.AddIdentityServer()
     .AddAspNetIdentity<AppUser>()
     .AddProfileService<ProfileService>()
     .AddConfigurationStore(options =>

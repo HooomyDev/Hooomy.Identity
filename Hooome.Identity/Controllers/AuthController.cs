@@ -61,7 +61,7 @@ public class AuthController(
     [HttpPut("profile")]
     public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileViewModel model)
     {
-        var user = await userManager.FindByIdAsync(model.Id.ToString());
+        var user = await userManager.FindByEmailAsync(model.Email);
         if (user == null) return NotFound("User not found");
 
         user.FirstName = model.FirstName;
