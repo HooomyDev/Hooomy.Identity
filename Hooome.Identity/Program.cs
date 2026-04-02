@@ -1,13 +1,16 @@
+using DotNetEnv;
 using Duende.IdentityServer.EntityFramework.DbContexts;
 using Hooome.Identity.Data;
 using Hooome.Identity.Models;
 using Hooome.Identity.Services;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Env.Load();
+
+builder.Configuration.AddEnvironmentVariables();
 
 builder.Services.AddControllers(); 
 
@@ -89,7 +92,8 @@ var app = builder.Build();
 using var scope = app.Services.CreateScope();
 var context = scope.ServiceProvider.GetRequiredService<AuthDbContext>();
 var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
-await DbContextInitializer.Initialize(context, roleManager);
+var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
+await DbContextInitializer.Initialize(context, userManager, roleManager);
 
 await IdentityDbInitializer.Initialize(scope.ServiceProvider);
 
