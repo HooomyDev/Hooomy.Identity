@@ -27,6 +27,11 @@ public class AuthController(
             Patronymic = viewModel.Patronymic,
         };
 
+        if(viewModel.Role == "Employee")
+        {
+            user.CompanyId = viewModel.CompanyId;
+        }
+
         var result = await userManager.CreateAsync(user, viewModel.Password);
 
         if (result.Succeeded)

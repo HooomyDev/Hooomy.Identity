@@ -27,4 +27,6 @@ public class RegisterViewModel
 
     [Required]
     public string Role { get; set; } = null!;
+
+    public string? CompanyId { get; set; }
 }

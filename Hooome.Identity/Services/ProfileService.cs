@@ -13,8 +13,7 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
     {
         var user = await userManager.GetUserAsync(context.Subject);
         var roles = await userManager.GetRolesAsync(user);
-        //var role = roles.FirstOrDefault() ?? "Resident";
-        var role = "Resident";
+        var role = roles.FirstOrDefault() ?? "Resident";
 
         var claims = new List<Claim>
         {
@@ -24,8 +23,15 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
             new(JwtClaimTypes.GivenName, user.FirstName ?? string.Empty),
             new(JwtClaimTypes.Name, user.UserName ?? string.Empty),
             new(JwtClaimTypes.Role, role),
-            new(JwtClaimTypes.PhoneNumber, user.PhoneNumber ?? string.Empty),
+            new(JwtClaimTypes.PhoneNumber, user.PhoneNumber ?? string.Empty)
         };
+        
+        if (role == "Employee" && !string.IsNullOrEmpty(user.CompanyId))
+        {
+            claims.Add(new Claim("company_id", user.CompanyId));
+
+        }
+
 
         context.IssuedClaims.AddRange(claims);
     }

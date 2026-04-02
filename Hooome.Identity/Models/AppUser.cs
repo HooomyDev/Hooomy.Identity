@@ -13,4 +13,6 @@ public class AppUser : IdentityUser
 
     [Required]
     public string Patronymic { get; set; } = "";
+
+    public string? CompanyId { get; set; }
 }
