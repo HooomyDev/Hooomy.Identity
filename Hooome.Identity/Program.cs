@@ -16,30 +16,21 @@ builder.Services.AddControllers();
 
 var configuration = builder.Configuration;
 
-var connectionString = configuration["DbConnections:auth"];
-var serverVersion = new MySqlServerVersion(new Version(configuration["DatabaseSettings:ServerVersion"]
-    ?? throw new NullReferenceException("Server version is null")));
-var migrationsAssembly = typeof(Program).Assembly.GetName().Name;
-
 builder.Services.AddDbContext<AuthDbContext>(options =>
 {
-    options.UseMySql(connectionString, serverVersion, 
-        sql => sql.MigrationsAssembly(migrationsAssembly));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("Auth"));
 });
 
-
-var configConnectionString = configuration["DbConnections:auth"];
+var configConnectionString = builder.Configuration.GetConnectionString("Auth");
 
 builder.Services.AddDbContext<ConfigurationDbContext>(options =>
 {
-    options.UseMySql(configConnectionString, serverVersion,
-        sql => sql.MigrationsAssembly(migrationsAssembly));
+    options.UseNpgsql(configConnectionString, b => b.MigrationsAssembly("Hooome.Identity"));
 });
 
 builder.Services.AddDbContext<PersistedGrantDbContext>(options =>
 {
-    options.UseMySql(configConnectionString, serverVersion,
-        sql => sql.MigrationsAssembly(migrationsAssembly));
+    options.UseNpgsql(configConnectionString, b => b.MigrationsAssembly("Hooome.Identity"));
 });
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
@@ -61,14 +52,12 @@ builder.Services.AddIdentityServer(options =>
     .AddConfigurationStore(options =>
     {
         options.ConfigureDbContext = b =>
-            b.UseMySql(configConnectionString, serverVersion,
-                sql => sql.MigrationsAssembly(migrationsAssembly));
+            b.UseNpgsql(configConnectionString, b => b.MigrationsAssembly("Hooome.Identity"));
     })
     .AddOperationalStore(options =>
     {
-        options.ConfigureDbContext = b => 
-            b.UseMySql(configConnectionString, serverVersion, 
-                sql => sql.MigrationsAssembly(migrationsAssembly));
+        options.ConfigureDbContext = b =>
+             b.UseNpgsql(configConnectionString, b => b.MigrationsAssembly("Hooome.Identity"));
 
         options.EnableTokenCleanup = true;
         options.TokenCleanupInterval = 3600;
