@@ -29,9 +29,8 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
         if (role == "Employee" && !string.IsNullOrEmpty(user.CompanyId))
         {
             claims.Add(new Claim("company_id", user.CompanyId));
-
         }
-
+        claims.Add(new Claim("status", user.Status.ToString()));
 
         context.IssuedClaims.AddRange(claims);
     }

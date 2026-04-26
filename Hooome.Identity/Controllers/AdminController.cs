@@ -1,5 +1,6 @@
 ﻿using Hooome.Identity.Data;
 using Hooome.Identity.Models;
+using Hooome.Identity.Models.Enums;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -16,8 +17,16 @@ public class AdminController(
     [HttpGet("users/count")]
     public async Task<ActionResult<int>> GetUsersCount()
     {
-        var count = await userManager.Users.CountAsync();
-        
+        var users = await userManager.Users.ToListAsync();
+        var count = 0;
+
+        foreach (var user in users)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            if (!roles.Contains("Admin"))
+                count++;
+        }
+
         return Ok(count);
     }
 
@@ -26,37 +35,43 @@ public class AdminController(
     [FromQuery] int page = 1,
     [FromQuery] int pageSize = 10)
     {
-        var usersQuery = userManager.Users
-            .OrderBy(u => u.UserName);
+        // Получаем всех пользователей
+        var allUsers = await userManager.Users.ToListAsync();
 
-        var totalCount = await usersQuery.CountAsync();
+        var nonAdminUsers = new List<AppUser>();
+        var rolesCache = new Dictionary<string, IList<string>>();
 
-        var users = await usersQuery
+        foreach (var user in allUsers)
+        {
+            var roles = await userManager.GetRolesAsync(user);
+            if (!roles.Contains("Admin"))
+            {
+                nonAdminUsers.Add(user);
+                rolesCache[user.Id] = roles;
+            }
+        }
+
+        var totalCount = nonAdminUsers.Count;
+        var pagedUsers = nonAdminUsers
+            .OrderBy(u => u.UserName)
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
-            .Select(u => new
-            {
-                User = u,
-                Roles = (from userRole in context.UserRoles
-                         join role in context.Roles on userRole.RoleId equals role.Id
-                         where userRole.UserId == u.Id
-                         select role.Name).ToList()
-            })
-            .ToListAsync();
+            .ToList();
 
-        var userDtos = users.Select(x => new UserWithRoleDto
+        var userDtos = pagedUsers.Select(user => new UserWithRoleDto
         {
-            Id = x.User.Id,
-            FirstName = x.User.FirstName,
-            Surname = x.User.Surname,
-            Patronymic = x.User.Patronymic,
-            Email = x.User.Email,
-            PhoneNumber = x.User.PhoneNumber,
-            EmailConfirmed = x.User.EmailConfirmed,
-            LockoutEnabled = x.User.LockoutEnabled,
-            LockoutEnd = x.User.LockoutEnd,
-            AccessFailedCount = x.User.AccessFailedCount,
-            Roles = x.Roles
+            Id = user.Id,
+            FirstName = user.FirstName,
+            Surname = user.Surname,
+            Patronymic = user.Patronymic,
+            Email = user.Email,
+            PhoneNumber = user.PhoneNumber,
+            EmailConfirmed = user.EmailConfirmed,
+            LockoutEnabled = user.LockoutEnabled,
+            LockoutEnd = user.LockoutEnd,
+            AccessFailedCount = user.AccessFailedCount,
+            Roles = rolesCache[user.Id].ToList(),
+            Status = user.Status.ToString()
         }).ToList();
 
         var result = new PagedResult<UserWithRoleDto>
@@ -70,28 +85,28 @@ public class AdminController(
 
         return Ok(result);
     }
-}
 
-public class UserWithRoleDto
-{
-    public string Id { get; set; }
-    public string FirstName { get; set; }
-    public string Surname { get; set; }
-    public string Patronymic { get; set; }
-    public string Email { get; set; }
-    public string PhoneNumber { get; set; }
-    public bool EmailConfirmed { get; set; }
-    public bool LockoutEnabled { get; set; }
-    public DateTimeOffset? LockoutEnd { get; set; }
-    public int AccessFailedCount { get; set; }
-    public List<string> Roles { get; set; }
-}
+    [HttpPut("users/{id:guid}/status")]
+    public async Task<ActionResult> UpdateUserStatus(Guid id, [FromQuery] string status)
+    {
+        var user = await userManager.FindByIdAsync(id.ToString());
 
-public class PagedResult<T>
-{
-    public List<T> Items { get; set; } = [];
-    public int TotalCount { get; set; }
-    public int Page { get; set; }
-    public int PageSize { get; set; }
-    public int TotalPages { get; set; }
+        if (user == null)
+            return NotFound(new { error = $"User with id {id} not found" });
+
+        if (!Enum.TryParse<UserStatus>(status, true, out var userStatus))
+        {
+            return BadRequest(new { error = $"Invalid status. Allowed values: {string.Join(", ", Enum.GetNames<UserStatus>())}" });
+        }
+
+        user.Status = userStatus;
+        var result = await userManager.UpdateAsync(user);
+
+        if (result.Succeeded)
+        {
+            return Ok();
+        }
+
+        return BadRequest(new { errors = result.Errors });
+    }
 }

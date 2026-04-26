@@ -52,6 +52,7 @@ public class DbContextInitializer
                 FirstName = firstName ?? string.Empty,
                 Surname = surname ?? string.Empty,
                 Patronymic = patronymic ?? string.Empty,
+                Status = Models.Enums.UserStatus.Approved
             };
 
             var result = await userManager.CreateAsync(newUser, password ?? "Default@123456");

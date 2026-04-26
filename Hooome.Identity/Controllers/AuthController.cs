@@ -25,11 +25,13 @@ public class AuthController(
             FirstName = viewModel.FirstName,
             Surname = viewModel.Surname,
             Patronymic = viewModel.Patronymic,
+            Status = Models.Enums.UserStatus.Pending,
         };
 
         if(viewModel.Role == "Employee")
         {
             user.CompanyId = viewModel.CompanyId;
+            user.Status = Models.Enums.UserStatus.Approved;
         }
 
         var result = await userManager.CreateAsync(user, viewModel.Password);
