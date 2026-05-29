@@ -74,7 +74,10 @@ builder.Services.AddCors(options =>
             .AllowAnyHeader()
             .AllowAnyMethod()
             .AllowCredentials()); 
-}); 
+});
+
+builder.Services.AddScoped<IPassGenService, PassGenService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 var app = builder.Build();
 

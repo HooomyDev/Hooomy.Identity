@@ -1,4 +1,4 @@
-﻿namespace Hooome.Identity.Controllers;
+﻿namespace Hooome.Identity.Models;
 
 public class PagedResult<T>
 {

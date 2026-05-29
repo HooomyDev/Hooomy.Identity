@@ -18,5 +18,7 @@ public class AppUser : IdentityUser
     [Required]
     public UserStatus Status { get; set; } = UserStatus.Unknown;
 
+    public bool MustChangePassword { get; set; } = false;
+
     public string? CompanyId { get; set; }
 }

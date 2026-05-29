@@ -1,4 +1,4 @@
-﻿namespace Hooome.Identity.Controllers;
+﻿namespace Hooome.Identity.Models;
 
 public class UserWithRoleDto
 {
@@ -14,4 +14,5 @@ public class UserWithRoleDto
     public int AccessFailedCount { get; set; }
     public List<string> Roles { get; set; }
     public string Status { get; set; }
+    public bool MustChangePassword { get; set; }
 }

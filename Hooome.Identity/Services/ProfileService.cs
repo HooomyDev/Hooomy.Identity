@@ -31,6 +31,7 @@ public class ProfileService(UserManager<AppUser> userManager) : IProfileService
             claims.Add(new Claim("company_id", user.CompanyId));
         }
         claims.Add(new Claim("status", user.Status.ToString()));
+        claims.Add(new Claim("must-change-password", user.MustChangePassword.ToString()));
 
         context.IssuedClaims.AddRange(claims);
     }

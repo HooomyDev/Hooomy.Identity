@@ -22,11 +22,5 @@ public class RegisterViewModel
     [Required]
     public string Surname { get; set; } = null!;
 
-    [Required]
     public string Patronymic { get; set; } = null!;
-
-    [Required]
-    public string Role { get; set; } = null!;
-
-    public string? CompanyId { get; set; }
 }

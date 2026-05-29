@@ -1,5 +1,6 @@
 ﻿using Hooome.Identity.Models;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Hooome.Identity.Data;
 
@@ -9,7 +10,7 @@ public class DbContextInitializer
         UserManager<AppUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
-        context.Database.EnsureCreated();
+        context.Database.Migrate();
 
         string[] roles = ["Resident", "Employee", "Admin"];
 
