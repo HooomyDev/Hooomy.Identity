@@ -45,7 +45,7 @@ builder.Services.AddIdentity<AppUser, IdentityRole>(config =>
 
 builder.Services.AddIdentityServer(options =>
 {
-    options.IssuerUri = configuration["ISSUER_URI"] ?? "https://identity-production-69c1.up.railway.app";
+    options.IssuerUri = "https://identity-production-69c1.up.railway.app";
 })
     .AddAspNetIdentity<AppUser>()
     .AddProfileService<ProfileService>()
